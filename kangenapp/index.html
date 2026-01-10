@@ -190,6 +190,8 @@
 
         // --- 2. FUNGSI KIRIM ---
         function kirimKangen() {
+            // Efek getar 200ms (Khusus Android)
+            if (navigator.vibrate) navigator.vibrate(200);
             const status = document.getElementById('status');
 
             if (!userRole) {
@@ -246,4 +248,5 @@
     </script>
 </body>
 </html>
+
 
