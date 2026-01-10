@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tombol Kangen</title>
+    <style>
+        body {
+            background-color: #ffe6e6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+
+        h1 { color: #d63384; margin-bottom: 40px; }
+
+        .btn-kangen {
+            width: 200px;
+            height: 200px;
+            background-color: #ff4d6d;
+            border-radius: 50%;
+            border: none;
+            box-shadow: 0 0 50px rgba(255, 77, 109, 0.5);
+            cursor: pointer;
+            transition: transform 0.1s;
+            animation: heartbeat 1.5s infinite;
+            font-size: 60px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-kangen:active {
+            transform: scale(0.9);
+            background-color: #d63384;
+        }
+
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        #status {
+            margin-top: 20px;
+            color: #888;
+            font-size: 14px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Lagi Kangen?</h1>
+    
+    <button class="btn-kangen" onclick="kirimKangen()">
+        ❤️
+    </button>
+    
+    <p id="status"></p>
+
+    <script>
+        // GANTI INI DENGAN NAMA TOPIK RAHASIA KALIAN
+        const TOPIC_NAME = "aeron-wasda-123"; 
+        
+        // Nama pengirim (bisa dibuat dinamis atau hardcode per device jika mau ribet, 
+        // tapi biar simple, kita set default aja)
+        const SENDER = "Pasanganmu"; 
+
+        function kirimKangen() {
+            const btn = document.querySelector('.btn-kangen');
+            const status = document.getElementById('status');
+            
+            // Efek visual feedback
+            status.innerText = "Mengirim sinyal cinta...";
+            
+            // Kirim Request ke ntfy.sh
+            fetch(`https://ntfy.sh/${TOPIC_NAME}`, {
+                method: 'POST', // Method POST untuk kirim data
+                body: "Aku kangen banget sekarang! 🥺❤️", // Isi pesan notif
+                headers: {
+                    'Title': 'Peringatan Kangen! 🚨', // Judul Notif
+                    'Priority': '5', // 5 = Max priority (bunyi nyaring & getar)
+                    'Tags': 'heart,warning' // Emoji di notif
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    status.innerText = "Terkirim! Tunggu dia balas ya.";
+                } else {
+                    status.innerText = "Gagal kirim. Cek internet kamu.";
+                }
+                
+                // Reset status text setelah 3 detik
+                setTimeout(() => { status.innerText = ""; }, 3000);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                status.innerText = "Error koneksi :(";
+            });
+        }
+    </script>
+</body>
+</html>
