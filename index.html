@@ -80,21 +80,26 @@
             // Efek visual feedback
             status.innerText = "Mengirim sinyal cinta...";
             
-            // Kirim Request ke ntfy.sh
-            fetch(`https://ntfy.sh/${TOPIC_NAME}`, {
-                method: 'POST', // Method POST untuk kirim data
-                body: "Aku kangen banget sekarang! 🥺❤️", // Isi pesan notif
-                headers: {
-                    'Title': 'Peringatan Kangen! 🚨', // Judul Notif
-                    'Priority': '5', // 5 = Max priority (bunyi nyaring & getar)
-                    'Tags': 'heart,warning' // Emoji di notif
-                }
+            // --- PERBAIKAN DI SINI ---
+            // Kita masukkan Title, Priority, dan Tags ke dalam URL query parameter
+            // Ini lebih ramah untuk browser dan anti-blokir CORS
+            const params = new URLSearchParams({
+                title: 'Peringatan Kangen! 🚨',
+                priority: '5',
+                tags: 'heart,warning'
+            });
+
+            fetch(`https://ntfy.sh/${TOPIC_NAME}?${params.toString()}`, {
+                method: 'POST', 
+                body: "Aku kangen banget sekarang! 🥺❤️" // Isi pesan tetap di body
+                // Kita HAPUS bagian 'headers' yang bikin error
             })
             .then(response => {
                 if (response.ok) {
                     status.innerText = "Terkirim! Tunggu dia balas ya.";
                 } else {
                     status.innerText = "Gagal kirim. Cek internet kamu.";
+                    console.log(response); // Cek console kalau penasaran
                 }
                 
                 // Reset status text setelah 3 detik
@@ -102,9 +107,10 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                status.innerText = "Error koneksi :(";
+                status.innerText = "Masih error :( Coba cek Console";
             });
         }
     </script>
 </body>
+
 </html>
