@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Balapan Kangen Real-time</title>
+    <title>Tombol Kangen Pribadi</title>
     
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png"> 
@@ -16,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        /* --- CSS SAMA SEPERTI SEBELUMNYA (DESAIN GLASSMORPHISM) --- */
+        /* --- TAMPILAN SAMA SEPERTI SEBELUMNYA --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
@@ -26,22 +26,18 @@
         .container {
             background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 30px 20px; text-align: center; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            padding: 40px 20px; text-align: center; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
             width: 100%; max-width: 400px;
         }
-        h1 { color: #d63384; margin: 0 0 5px 0; font-weight: 600; font-size: 26px; }
-        p.subtitle { margin-bottom: 25px; color: #7a7a7a; font-size: 13px; }
+        h1 { color: #d63384; margin: 0 0 10px 0; font-weight: 600; font-size: 26px; }
+        p.subtitle { margin-bottom: 30px; color: #7a7a7a; font-size: 13px; }
 
-        .scoreboard {
-            display: flex; justify-content: space-between;
-            background: rgba(255,255,255,0.4); border-radius: 15px; padding: 15px;
-            margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.2);
+        /* Counter Besar Sendiri */
+        .my-score-box {
+            margin-bottom: 30px;
         }
-        .score-box { width: 48%; }
-        .score-label { font-size: 11px; color: #d63384; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-        .score-num { font-size: 28px; font-weight: 800; color: #4a4a4a; margin-top: 5px; line-height: 1; }
-
-        .user-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; background: rgba(255,255,255,0.6); font-size: 11px; margin-bottom: 20px; color: #666; font-weight: 600; }
+        .score-label { font-size: 12px; color: #d63384; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+        .score-num { font-size: 60px; font-weight: 800; color: #4a4a4a; margin-top: 0px; line-height: 1; }
 
         .btn-kangen-wrap { position: relative; display: inline-block; }
         .btn-kangen::before {
@@ -55,7 +51,7 @@
             cursor: pointer; transition: all 0.2s; font-size: 60px; color: white;
             display: flex; align-items: center; justify-content: center; outline: none; position: relative; z-index: 2;
         }
-        .btn-kangen:active { transform: scale(0.92); box-shadow: 0 5px 15px -5px rgba(255, 77, 109, 0.8); }
+        .btn-kangen:active { transform: scale(0.92); }
         .heart-icon { animation: heartbeat 1.5s ease-in-out infinite; display: inline-block; }
 
         #status { margin-top: 25px; color: #d63384; font-weight: 500; font-size: 14px; min-height: 20px; opacity: 0; transition: opacity 0.3s ease; }
@@ -69,21 +65,13 @@
 <body>
 
     <div class="container">
-        <h1>Balapan Kangen</h1>
-        <p class="subtitle">Siapa yang paling bucin hari ini?</p>
+        <h1>Tombol Kangen</h1>
+        <p class="subtitle" id="welcome-msg">Tekan hati untuk kirim rindu.</p>
 
-        <div class="scoreboard">
-            <div class="score-box">
-                <div class="score-label">AKU</div>
-                <div class="score-num" id="score-boy">...</div>
-            </div>
-            <div class="score-box" style="border-left: 1px solid rgba(0,0,0,0.1)">
-                <div class="score-label">KAMU</div>
-                <div class="score-num" id="score-girl">...</div>
-            </div>
+        <div class="my-score-box">
+            <div class="score-label">RINDU TERKIRIM</div>
+            <div class="score-num" id="my-score">0</div>
         </div>
-
-        <div class="user-badge" id="role-display">Loading user...</div>
         
         <div class="btn-kangen-wrap">
             <button class="btn-kangen" onclick="kirimKangen()">
@@ -98,101 +86,78 @@
 
     <script>
         // --- KONFIGURASI ---
-        const NTFY_TOPIC = "aeron-wasda-123"; 
-        // Ganti namespace baru agar skor reset dan bersih
-        const NAMESPACE = "anniv-sync-fix-v4"; 
-        
-        const KEY_BOY = "cowok";
-        const KEY_GIRL = "cewek";
+        const NTFY_TOPIC = "aeron-wasda-123"; // Nama Topik Notifikasi
 
-        // --- 1. DETEKSI USER ---
+        // --- 1. SETUP AWAL (LOAD DARI MEMORI HP) ---
+        // Ambil peran (boy/girl) dari URL atau memori
         const urlParams = new URLSearchParams(window.location.search);
         let userRole = urlParams.get('user'); 
         if (!userRole) userRole = localStorage.getItem('role');
 
-        const roleDisplay = document.getElementById('role-display');
-        const labelBoy = document.querySelector('.score-box:first-child .score-label');
-        const labelGirl = document.querySelector('.score-box:last-child .score-label');
+        // Ambil jumlah skor terakhir dari memori HP (LocalStorage)
+        // Kalau belum ada, set jadi 0
+        let currentScore = parseInt(localStorage.getItem('kangenScore')) || 0;
 
+        // Tampilkan skor saat pertama kali buka
+        const scoreDisplay = document.getElementById('my-score');
+        scoreDisplay.innerText = currentScore;
+
+        // Tampilkan pesan selamat datang
+        const welcomeMsg = document.getElementById('welcome-msg');
         if (userRole === 'boy') {
             localStorage.setItem('role', 'boy'); 
-            roleDisplay.innerText = "Login: Cowok (Aku)";
-            labelBoy.innerText = "AKU"; labelGirl.innerText = "KAMU"; 
+            welcomeMsg.innerText = "Halo Ganteng, kangen dia?";
         } else if (userRole === 'girl') {
             localStorage.setItem('role', 'girl');
-            roleDisplay.innerText = "Login: Cewek (Kamu)";
-            labelBoy.innerText = "DIA"; labelGirl.innerText = "AKU"; 
-        } else {
-            roleDisplay.innerText = "Mode Penonton";
+            welcomeMsg.innerText = "Halo Cantik, kangen dia?";
         }
 
-        // --- 2. FUNGSI KIRIM (HIT API) ---
+        // --- 2. FUNGSI UTAMA (KLIK TOMBOL) ---
         function kirimKangen() {
             const status = document.getElementById('status');
-            
+
+            // Cek role dulu
             if (!userRole) {
-                alert("Link salah! Gunakan link ?user=boy atau ?user=girl"); return;
+                alert("Buka link khusus dulu ya (user=boy/girl) biar notifnya bener!");
+                return;
             }
 
+            // A. UPDATE SKOR LOKAL (INSTAN & PERMANEN)
+            currentScore += 1; // Tambah 1
+            scoreDisplay.innerText = currentScore; // Update layar
+            localStorage.setItem('kangenScore', currentScore); // Simpan ke memori HP
+
+            // B. KIRIM NOTIFIKASI (INTERNET)
             status.classList.add('show');
-            status.innerText = "Mengirim...";
+            status.innerText = "Mengirim notif...";
             status.style.color = "#d63384";
 
-            // A. Kirim Notif
-            const notifMsg = (userRole === 'boy') ? "Sayang, aku kangen! ❤️" : "Mas, aku kangen! 🥺";
-            const params = new URLSearchParams({ title: 'Kangen Alert! 🚨', priority: '5', tags: 'heart' });
-            fetch(`https://ntfy.sh/${NTFY_TOPIC}?${params.toString()}`, { method: 'POST', body: notifMsg }).catch(()=>{});
+            const notifMsg = (userRole === 'boy') 
+                ? "Sayang, aku kangen banget! ❤️" 
+                : "Mas, aku kangen nih! 🥺";
 
-            // B. Update Skor (HIT)
-            const targetKey = (userRole === 'boy') ? KEY_BOY : KEY_GIRL;
-            const antiCache = new Date().getTime(); // Selalu unik
+            const params = new URLSearchParams({
+                title: 'Sinyal Kangen Masuk! 🚨',
+                priority: '5',
+                tags: 'heart,warning'
+            });
 
-            // Gunakan mode no-store agar browser tidak menyimpan cache
-            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${targetKey}/up?t=${antiCache}`, { cache: "no-store" })
-                .then(res => res.json())
-                .then(data => {
-                    // Update skor di layar sendiri LANGSUNG (biar cepat)
-                    if (userRole === 'boy') {
-                        document.getElementById('score-boy').innerText = data.count;
-                    } else {
-                        document.getElementById('score-girl').innerText = data.count;
-                    }
-                    
-                    status.innerText = "Terkirim!";
-                    setTimeout(() => { status.classList.remove('show'); }, 2000);
-                })
-                .catch(err => {
-                    status.innerText = "Gagal koneksi server";
-                });
+            fetch(`https://ntfy.sh/${NTFY_TOPIC}?${params.toString()}`, {
+                method: 'POST', body: notifMsg
+            })
+            .then(res => {
+                if(res.ok) {
+                    status.innerText = "Terkirim ke HP dia! ✅";
+                } else {
+                    status.innerText = "Notif gagal, tapi skor tersimpan.";
+                }
+                setTimeout(() => { status.classList.remove('show'); }, 2000);
+            })
+            .catch(err => {
+                status.innerText = "Offline. Skor tetap tersimpan.";
+                setTimeout(() => { status.classList.remove('show'); }, 2000);
+            });
         }
-
-        // --- 3. FUNGSI SINKRONISASI OTOMATIS (FETCH BOTH SCORES) ---
-        // Ini adalah kunci agar skor lawan muncul di layar kita
-        function syncScores() {
-            const antiCache = new Date().getTime(); // Wajib ada biar refresh terus
-            
-            // 1. Ambil Skor Cowok Terbaru
-            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${KEY_BOY}?t=${antiCache}`, { cache: "no-store" })
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('score-boy').innerText = data.count || 0;
-                }).catch(err => console.log("Sync Boy Fail"));
-
-            // 2. Ambil Skor Cewek Terbaru
-            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${KEY_GIRL}?t=${antiCache}`, { cache: "no-store" })
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('score-girl').innerText = data.count || 0;
-                }).catch(err => console.log("Sync Girl Fail"));
-        }
-
-        // Jalankan Sync Pertama kali
-        syncScores();
-
-        // Jalankan Sync Berulang setiap 3 detik (3000ms)
-        // Ini yang membuat skor lawan muncul otomatis tanpa refresh halaman
-        setInterval(syncScores, 3000);
-
     </script>
 </body>
 </html>
