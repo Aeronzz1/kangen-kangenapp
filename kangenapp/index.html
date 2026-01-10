@@ -158,10 +158,14 @@
 
     <script>
         // --- KONFIGURASI PENTING ---
-        const NTFY_TOPIC = "aeron-wasda-123"; // Nama Topik Ntfy
-        const NAMESPACE = "anniv-aeron-wasda-v2"; // Nama Database Score (Ganti v2 biar reset)
-        const KEY_BOY = "score_cowok";
-        const KEY_GIRL = "score_cewek";
+        const NTFY_TOPIC = "aeron-wasda-123"; // Pastikan sama dengan topik Ntfy kamu
+        
+        // GANTI NAMA INI DENGAN YANG UNIK (Tanpa spasi/simbol aneh)
+        // Contoh: anniv-aeron-rara
+        const NAMESPACE = "anniv-project-v3"; 
+        
+        const KEY_BOY = "cowok";
+        const KEY_GIRL = "cewek";
 
         // --- 1. DETEKSI USER (LOGIKA BOY/GIRL) ---
         const urlParams = new URLSearchParams(window.location.search);
@@ -178,13 +182,13 @@
         if (userRole === 'boy') {
             localStorage.setItem('role', 'boy'); 
             roleDisplay.innerText = "Login: Cowok (Aku)";
-            labelBoy.innerText = "AKU";  // Kiri
-            labelGirl.innerText = "KAMU"; // Kanan
+            labelBoy.innerText = "AKU";  
+            labelGirl.innerText = "KAMU"; 
         } else if (userRole === 'girl') {
             localStorage.setItem('role', 'girl');
             roleDisplay.innerText = "Login: Cewek (Kamu)";
-            labelBoy.innerText = "DIA";  // Kiri
-            labelGirl.innerText = "AKU"; // Kanan
+            labelBoy.innerText = "DIA";  
+            labelGirl.innerText = "AKU"; 
         } else {
             roleDisplay.innerText = "Mode Tamu (Gunakan Link Khusus)";
         }
@@ -193,7 +197,6 @@
         function kirimKangen() {
             const status = document.getElementById('status');
             
-            // Validasi: Harus pakai link khusus
             if (!userRole) {
                 alert("Link salah! Buka link yang ada '?user=...' ya.");
                 return;
@@ -203,13 +206,11 @@
             status.innerText = "Mengirim sinyal cinta...";
             status.style.color = "#d63384";
 
-            // Tentukan variabel berdasarkan role
-            const targetKey = (userRole === 'boy') ? KEY_BOY : KEY_GIRL;
+            // A. Kirim Notif ke HP (Ntfy) - INI SUDAH BERHASIL
             const notifMsg = (userRole === 'boy') 
                 ? "Sayang, aku kangen kamu! ❤️ (Skor Cowok +1)" 
                 : "Mas, aku kangen nih! 🥺 (Skor Cewek +1)";
 
-            // A. Kirim Notif ke HP (Ntfy)
             const params = new URLSearchParams({
                 title: 'Peringatan Kangen! 🚨',
                 priority: '5',
@@ -218,13 +219,16 @@
 
             fetch(`https://ntfy.sh/${NTFY_TOPIC}?${params.toString()}`, {
                 method: 'POST', body: notifMsg
-            });
+            }).catch(err => console.log("Notif error:", err));
 
-            // B. Update Database Skor (CountAPI)
-            fetch(`https://api.countapi.xyz/hit/${NAMESPACE}/${targetKey}`)
+            // B. Update Database Skor (GANTI KE CounterAPI.dev)
+            // Endpoint 'up' untuk menambah angka
+            const targetKey = (userRole === 'boy') ? KEY_BOY : KEY_GIRL;
+            
+            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${targetKey}/up`)
                 .then(res => res.json())
                 .then(data => {
-                    updateDisplay(); // Refresh tampilan angka
+                    updateDisplay(); // Refresh tampilan
                     status.innerText = "Terkirim! Skor bertambah.";
                     
                     setTimeout(() => { 
@@ -232,22 +236,25 @@
                     }, 3000);
                 })
                 .catch(err => {
-                    status.innerText = "Gagal update skor (Cek Internet)";
+                    console.error(err);
+                    status.innerText = "Gagal update skor (Coba matikan AdBlock)";
                 });
         }
 
         // --- 3. FUNGSI UPDATE SCOREBOARD (AUTO) ---
         function updateDisplay() {
+            // API Baru menggunakan format JSON { count: 123 }
+            
             // Ambil Skor Cowok
-            fetch(`https://api.countapi.xyz/get/${NAMESPACE}/${KEY_BOY}`)
+            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${KEY_BOY}`)
                 .then(res => res.json()).then(data => {
-                    document.getElementById('score-boy').innerText = data.value || 0;
+                    document.getElementById('score-boy').innerText = data.count || 0;
                 }).catch(() => {});
 
             // Ambil Skor Cewek
-            fetch(`https://api.countapi.xyz/get/${NAMESPACE}/${KEY_GIRL}`)
+            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${KEY_GIRL}`)
                 .then(res => res.json()).then(data => {
-                    document.getElementById('score-girl').innerText = data.value || 0;
+                    document.getElementById('score-girl').innerText = data.count || 0;
                 }).catch(() => {});
         }
 
@@ -257,3 +264,4 @@
     </script>
 </body>
 </html>
+
