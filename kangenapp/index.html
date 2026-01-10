@@ -158,23 +158,20 @@
 
     <script>
         // --- KONFIGURASI PENTING ---
-        const NTFY_TOPIC = "aeron-wasda-123"; // Pastikan sama dengan topik Ntfy kamu
+        const NTFY_TOPIC = "aeron-wasda-123"; 
         
-        // GANTI NAMA INI DENGAN YANG UNIK (Tanpa spasi/simbol aneh)
-        // Contoh: anniv-aeron-rara
-        const NAMESPACE = "anniv-project-v3"; 
+        // GANTI INI JADI NAMA YANG SANGAT UNIK (Misal gabungan tgl jadian)
+        // Kalau nama pasaran, nanti skornya bentrok sama orang lain
+        const NAMESPACE = "anniv-aeron-rara-final"; 
         
         const KEY_BOY = "cowok";
         const KEY_GIRL = "cewek";
 
-        // --- 1. DETEKSI USER (LOGIKA BOY/GIRL) ---
+        // --- 1. DETEKSI USER ---
         const urlParams = new URLSearchParams(window.location.search);
         let userRole = urlParams.get('user'); 
-
-        // Cek LocalStorage kalau URL kosong
         if (!userRole) userRole = localStorage.getItem('role');
 
-        // Setup UI berdasarkan Role
         const roleDisplay = document.getElementById('role-display');
         const labelBoy = document.querySelector('.score-box:first-child .score-label');
         const labelGirl = document.querySelector('.score-box:last-child .score-label');
@@ -182,18 +179,16 @@
         if (userRole === 'boy') {
             localStorage.setItem('role', 'boy'); 
             roleDisplay.innerText = "Login: Cowok (Aku)";
-            labelBoy.innerText = "AKU";  
-            labelGirl.innerText = "KAMU"; 
+            labelBoy.innerText = "AKU"; labelGirl.innerText = "KAMU"; 
         } else if (userRole === 'girl') {
             localStorage.setItem('role', 'girl');
             roleDisplay.innerText = "Login: Cewek (Kamu)";
-            labelBoy.innerText = "DIA";  
-            labelGirl.innerText = "AKU"; 
+            labelBoy.innerText = "DIA"; labelGirl.innerText = "AKU"; 
         } else {
-            roleDisplay.innerText = "Mode Tamu (Gunakan Link Khusus)";
+            roleDisplay.innerText = "Mode Tamu";
         }
 
-        // --- 2. FUNGSI KIRIM (TOMBOL DITEKAN) ---
+        // --- 2. FUNGSI KIRIM ---
         function kirimKangen() {
             const status = document.getElementById('status');
             
@@ -203,13 +198,13 @@
             }
 
             status.classList.add('show');
-            status.innerText = "Mengirim sinyal cinta...";
+            status.innerText = "Mengirim...";
             status.style.color = "#d63384";
 
-            // A. Kirim Notif ke HP (Ntfy) - INI SUDAH BERHASIL
+            // A. Kirim Notif (Ntfy)
             const notifMsg = (userRole === 'boy') 
-                ? "Sayang, aku kangen kamu! ❤️ (Skor Cowok +1)" 
-                : "Mas, aku kangen nih! 🥺 (Skor Cewek +1)";
+                ? "Sayang, aku kangen kamu! ❤️ (Counter +1)" 
+                : "Mas, aku kangen nih! 🥺 (Counter +1)";
 
             const params = new URLSearchParams({
                 title: 'Peringatan Kangen! 🚨',
@@ -219,49 +214,56 @@
 
             fetch(`https://ntfy.sh/${NTFY_TOPIC}?${params.toString()}`, {
                 method: 'POST', body: notifMsg
-            }).catch(err => console.log("Notif error:", err));
+            }).catch(err => console.log("Notif skip"));
 
-            // B. Update Database Skor (GANTI KE CounterAPI.dev)
-            // Endpoint 'up' untuk menambah angka
+            // B. Update Database Skor (DENGAN ANTI-CACHE)
             const targetKey = (userRole === 'boy') ? KEY_BOY : KEY_GIRL;
             
-            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${targetKey}/up`)
+            // Tambahkan parameter waktu (?t=...) biar browser tidak pakai cache
+            const antiCache = new Date().getTime(); 
+
+            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${targetKey}/up?t=${antiCache}`, {
+                cache: "no-store" // Memaksa browser ambil data baru
+            })
                 .then(res => res.json())
                 .then(data => {
-                    updateDisplay(); // Refresh tampilan
+                    // Update tampilan LANGSUNG pakai data respon (biar instan)
+                    if (userRole === 'boy') {
+                        document.getElementById('score-boy').innerText = data.count;
+                    } else {
+                        document.getElementById('score-girl').innerText = data.count;
+                    }
+
                     status.innerText = "Terkirim! Skor bertambah.";
-                    
-                    setTimeout(() => { 
-                        status.classList.remove('show');
-                    }, 3000);
+                    setTimeout(() => { status.classList.remove('show'); }, 2000);
                 })
                 .catch(err => {
                     console.error(err);
-                    status.innerText = "Gagal update skor (Coba matikan AdBlock)";
+                    status.innerText = "Error Skor (Coba Refresh)";
                 });
         }
 
         // --- 3. FUNGSI UPDATE SCOREBOARD (AUTO) ---
         function updateDisplay() {
-            // API Baru menggunakan format JSON { count: 123 }
-            
+            const antiCache = new Date().getTime(); // Selalu bikin URL unik
+
             // Ambil Skor Cowok
-            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${KEY_BOY}`)
+            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${KEY_BOY}?t=${antiCache}`, { cache: "no-store" })
                 .then(res => res.json()).then(data => {
                     document.getElementById('score-boy').innerText = data.count || 0;
                 }).catch(() => {});
 
             // Ambil Skor Cewek
-            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${KEY_GIRL}`)
+            fetch(`https://api.counterapi.dev/v1/${NAMESPACE}/${KEY_GIRL}?t=${antiCache}`, { cache: "no-store" })
                 .then(res => res.json()).then(data => {
                     document.getElementById('score-girl').innerText = data.count || 0;
                 }).catch(() => {});
         }
 
-        // Jalankan saat pertama load & Auto refresh tiap 5 detik
         updateDisplay();
         setInterval(updateDisplay, 5000);
     </script>
 </body>
 </html>
+
 
