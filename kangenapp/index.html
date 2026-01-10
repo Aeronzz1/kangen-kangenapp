@@ -22,8 +22,48 @@
             background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; margin: 0; font-family: 'Poppins', sans-serif; padding: 20px; color: #4a4a4a;
+            overflow: hidden; /* Mencegah scrollbar muncul karena animasi */
+            position: relative; /* Diperlukan untuk hujan hati */
         }
+
+        /* --- CSS UNTUK HUJAN HATI (BARU) --- */
+        #heart-rain-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Agar tidak menghalangi klik tombol */
+            z-index: 1; /* Di atas background, di bawah konten utama */
+            overflow: hidden;
+        }
+
+        .falling-heart {
+            position: absolute;
+            top: -10%;
+            color: rgba(255, 77, 109, 0.6); /* Warna pink transparan */
+            opacity: 0;
+            animation: fall-animation linear forwards;
+        }
+
+        @keyframes fall-animation {
+            0% {
+                opacity: 0;
+                transform: translateY(0) rotate(0deg);
+            }
+            10% {
+                opacity: 0.8;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(110vh) rotate(360deg); /* Jatuh sampai bawah layar sambil muter */
+            }
+        }
+
+        /* --- CONTAINER UTAMA (Diberi Z-Index biar di atas hujan) --- */
         .container {
+            position: relative;
+            z-index: 10; /* Pastikan lebih tinggi dari hujan hati */
             background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.3);
             padding: 40px 20px; text-align: center; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
@@ -41,14 +81,8 @@
 
         /* Tombol Reset Kecil */
         .reset-link {
-            font-size: 11px;
-            color: #999;
-            text-decoration: underline;
-            cursor: pointer;
-            margin-top: 5px;
-            display: inline-block;
-            opacity: 0.6;
-            transition: opacity 0.2s;
+            font-size: 11px; color: #999; text-decoration: underline; cursor: pointer;
+            margin-top: 5px; display: inline-block; opacity: 0.6; transition: opacity 0.2s;
         }
         .reset-link:hover { opacity: 1; color: #d63384; }
 
@@ -76,6 +110,7 @@
     </style>
 </head>
 <body>
+    <div id="heart-rain-container"></div>
 
     <div class="container">
         <h1>Tombol Kangen</h1>
@@ -99,8 +134,37 @@
     <div class="footer">Dibuat dengan cinta oleh Mine pada 1st Anniversary ❤️</div>
 
     <script>
-        // --- KONFIGURASI BARU (TOPIK SILANG) ---
-        // Ganti 'unik123' dengan kata unik kalian biar gak nyasar ke orang lain
+        // --- SCRIPT HUJAN HATI (BARU) ---
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.classList.add('falling-heart');
+            heart.innerHTML = '❤️'; // Bisa ganti emoji lain kalau mau
+            
+            // Random posisi horizontal (kiri-kanan)
+            heart.style.left = Math.random() * 100 + 'vw';
+            
+            // Random ukuran hati (antara 10px sampai 25px)
+            const size = Math.random() * 15 + 10;
+            heart.style.fontSize = size + 'px';
+            
+            // Random kecepatan jatuh (antara 3s sampai 6s)
+            const duration = Math.random() * 3 + 3;
+            heart.style.animationDuration = duration + 's';
+            
+            // Masukkan ke dalam wadah
+            document.getElementById('heart-rain-container').appendChild(heart);
+            
+            // Hapus hati setelah selesai animasi biar HP gak lemot
+            setTimeout(() => {
+                heart.remove();
+            }, duration * 1000);
+        }
+
+        // Jalankan fungsi createHeart setiap 300ms (0.3 detik)
+        setInterval(createHeart, 300);
+
+
+        // --- KONFIGURASI LAMA ---
         const TOPIC_BUAT_COWOK = "inbox-aeron-123"; 
         const TOPIC_BUAT_CEWEK = "inbox-wasda-123"; 
 
@@ -137,7 +201,7 @@
             scoreDisplay.innerText = currentScore;
             localStorage.setItem('kangenScore', currentScore);
 
-            // B. LOGIKA SILANG (PENTING DI SINI)
+            // B. LOGIKA SILANG
             const targetTopic = (userRole === 'boy') ? TOPIC_BUAT_CEWEK : TOPIC_BUAT_COWOK;
             
             const notifMsg = (userRole === 'boy') 
