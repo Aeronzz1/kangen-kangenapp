@@ -218,43 +218,10 @@
                 status.style.color = "red";
             });
         }
-         const COUNTER_NAMESPACE = "project-anniv-aeron-wasda"; 
-         const COUNTER_KEY = "jumlah-kangen";
-         
-         function kirimKangen() {
-             const btn = document.querySelector('.btn-kangen');
-             const status = document.getElementById('status');
-             
-             status.classList.add('show');
-             status.innerText = "Mengirim sinyal cinta...";
-         
-             // 1. KIRIM NOTIFIKASI (NTFY)
-             const params = new URLSearchParams({
-                 title: 'Peringatan Kangen! 🚨',
-                 priority: '5',
-                 tags: 'heart,warning'
-             });
-         
-             fetch(`https://ntfy.sh/${TOPIC_NAME}?${params.toString()}`, {
-                 method: 'POST', 
-                 body: "Aku kangen banget sekarang! Cepat balas dong 🥺❤️"
-             });
-         
-             // 2. UPDATE COUNTER (COUNTAPI)
-             // Endpoint 'hit' akan menambah angka +1
-             fetch(`https://api.countapi.xyz/hit/${COUNTER_NAMESPACE}/${COUNTER_KEY}`)
-             .then(res => res.json())
-             .then(data => {
-                 console.log("Kangen count:", data.value);
-             });
-         
-             // Feedback UI
-             status.innerText = "Terkirim! Counter bertambah +1";
-             setTimeout(() => { status.classList.remove('show'); }, 3000);
-         }
     </script>
 </body>
 </html>
+
 
 
 
