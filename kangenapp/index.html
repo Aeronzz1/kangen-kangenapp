@@ -85,79 +85,79 @@
     <div class="footer">Happy 1st Anniversary!</div>
 
     <script>
-        // --- KONFIGURASI ---
-        const NTFY_TOPIC = "aeron-wasda-123"; // Nama Topik Notifikasi
+        // --- KONFIGURASI BARU (TOPIK SILANG) ---
+        // Ganti 'unik123' dengan kata unik kalian biar gak nyasar ke orang lain
+        const TOPIC_BUAT_COWOK = "inbox-aeron-123"; 
+        const TOPIC_BUAT_CEWEK = "inbox-wasda-123"; 
 
-        // --- 1. SETUP AWAL (LOAD DARI MEMORI HP) ---
-        // Ambil peran (boy/girl) dari URL atau memori
+        // --- 1. SETUP AWAL ---
         const urlParams = new URLSearchParams(window.location.search);
         let userRole = urlParams.get('user'); 
         if (!userRole) userRole = localStorage.getItem('role');
 
-        // Ambil jumlah skor terakhir dari memori HP (LocalStorage)
-        // Kalau belum ada, set jadi 0
         let currentScore = parseInt(localStorage.getItem('kangenScore')) || 0;
-
-        // Tampilkan skor saat pertama kali buka
         const scoreDisplay = document.getElementById('my-score');
         scoreDisplay.innerText = currentScore;
 
-        // Tampilkan pesan selamat datang
         const welcomeMsg = document.getElementById('welcome-msg');
+        
+        // Setup Role
         if (userRole === 'boy') {
             localStorage.setItem('role', 'boy'); 
-            welcomeMsg.innerText = "Halo Ganteng, kangen dia?";
+            welcomeMsg.innerText = "Kirim rindu ke HP-nya Wasda?";
         } else if (userRole === 'girl') {
             localStorage.setItem('role', 'girl');
-            welcomeMsg.innerText = "Halo Cantik, kangen dia?";
+            welcomeMsg.innerText = "Kirim rindu ke HP-nya Aeron?";
         }
 
-        // --- 2. FUNGSI UTAMA (KLIK TOMBOL) ---
+        // --- 2. FUNGSI KIRIM ---
         function kirimKangen() {
             const status = document.getElementById('status');
 
-            // Cek role dulu
             if (!userRole) {
-                alert("Buka link khusus dulu ya (user=boy/girl) biar notifnya bener!");
-                return;
+                alert("Buka link pakai ?user=boy atau ?user=girl dulu!"); return;
             }
 
-            // A. UPDATE SKOR LOKAL (INSTAN & PERMANEN)
-            currentScore += 1; // Tambah 1
-            scoreDisplay.innerText = currentScore; // Update layar
-            localStorage.setItem('kangenScore', currentScore); // Simpan ke memori HP
+            // A. Update Skor Lokal
+            currentScore += 1;
+            scoreDisplay.innerText = currentScore;
+            localStorage.setItem('kangenScore', currentScore);
 
-            // B. KIRIM NOTIFIKASI (INTERNET)
-            status.classList.add('show');
-            status.innerText = "Mengirim notif...";
-            status.style.color = "#d63384";
-
+            // B. LOGIKA SILANG (PENTING DI SINI)
+            // Kalau aku Cowok -> Kirim ke Topik Cewek
+            // Kalau aku Cewek -> Kirim ke Topik Cowok
+            const targetTopic = (userRole === 'boy') ? TOPIC_BUAT_CEWEK : TOPIC_BUAT_COWOK;
+            
             const notifMsg = (userRole === 'boy') 
                 ? "Sayang, aku kangen banget! ❤️" 
                 : "Mas, aku kangen nih! 🥺";
 
+            status.classList.add('show');
+            status.innerText = "Mengirim ke HP dia...";
+            status.style.color = "#d63384";
+
             const params = new URLSearchParams({
                 title: 'Sinyal Kangen Masuk! 🚨',
-                priority: '5',
-                tags: 'heart,warning'
+                priority: '5', tags: 'heart,warning'
             });
 
-            fetch(`https://ntfy.sh/${NTFY_TOPIC}?${params.toString()}`, {
+            // Kirim ke TARGET TOPIC
+            fetch(`https://ntfy.sh/${targetTopic}?${params.toString()}`, {
                 method: 'POST', body: notifMsg
             })
             .then(res => {
                 if(res.ok) {
-                    status.innerText = "Terkirim ke HP dia! ✅";
+                    status.innerText = "Terkirim! ✅";
                 } else {
-                    status.innerText = "Notif gagal, tapi skor tersimpan.";
+                    status.innerText = "Gagal kirim notif.";
                 }
                 setTimeout(() => { status.classList.remove('show'); }, 2000);
             })
             .catch(err => {
-                status.innerText = "Offline. Skor tetap tersimpan.";
-                setTimeout(() => { status.classList.remove('show'); }, 2000);
+                status.innerText = "Offline (Skor tersimpan).";
             });
         }
     </script>
 </body>
 </html>
+
