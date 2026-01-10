@@ -39,6 +39,19 @@
         .score-label { font-size: 12px; color: #d63384; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
         .score-num { font-size: 60px; font-weight: 800; color: #4a4a4a; margin-top: 0px; line-height: 1; }
 
+        /* Tombol Reset Kecil */
+        .reset-link {
+            font-size: 11px;
+            color: #999;
+            text-decoration: underline;
+            cursor: pointer;
+            margin-top: 5px;
+            display: inline-block;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .reset-link:hover { opacity: 1; color: #d63384; }
+
         .btn-kangen-wrap { position: relative; display: inline-block; }
         .btn-kangen::before {
             content: ''; position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px;
@@ -71,6 +84,7 @@
         <div class="my-score-box">
             <div class="score-label">RINDU TERKIRIM</div>
             <div class="score-num" id="my-score">0</div>
+            <div class="reset-link" onclick="resetCounter()">Reset Counter</div>
         </div>
         
         <div class="btn-kangen-wrap">
@@ -124,8 +138,6 @@
             localStorage.setItem('kangenScore', currentScore);
 
             // B. LOGIKA SILANG (PENTING DI SINI)
-            // Kalau aku Cowok -> Kirim ke Topik Cewek
-            // Kalau aku Cewek -> Kirim ke Topik Cowok
             const targetTopic = (userRole === 'boy') ? TOPIC_BUAT_CEWEK : TOPIC_BUAT_COWOK;
             
             const notifMsg = (userRole === 'boy') 
@@ -157,11 +169,16 @@
                 status.innerText = "Offline (Skor tersimpan).";
             });
         }
+
+        // --- 3. FUNGSI RESET COUNTER ---
+        function resetCounter() {
+            if (confirm("Yakin mau reset skor kangen jadi 0?")) {
+                currentScore = 0;
+                scoreDisplay.innerText = currentScore;
+                localStorage.setItem('kangenScore', 0);
+                alert("Skor telah direset!");
+            }
+        }
     </script>
 </body>
 </html>
-
-
-
-
-
