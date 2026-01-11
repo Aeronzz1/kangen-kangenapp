@@ -136,6 +136,20 @@
             // Tambahkan koma kalau mau nambah foto lagi
         ];
 
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.classList.add('falling-heart');
+            heart.innerHTML = '❤️'; 
+            heart.style.left = Math.random() * 100 + 'vw';
+            const size = Math.random() * 15 + 10;
+            heart.style.fontSize = size + 'px';
+            const duration = Math.random() * 3 + 3;
+            heart.style.animationDuration = duration + 's';
+            document.getElementById('heart-rain-container').appendChild(heart);
+            setTimeout(() => { heart.remove(); }, duration * 1000);
+        }
+        setInterval(createHeart, 400);
+
         // --- SCRIPT LOGIKA HUJAN FOTO ---
         function createPhoto() {
             if (photoList.length === 0) return; // Kalau gak ada foto, skip
@@ -276,6 +290,7 @@
     </script>
 </body>
 </html>
+
 
 
 
