@@ -134,39 +134,28 @@
     <div class="footer">Dibuat dengan cinta oleh Mine pada 1st Anniversary ❤️</div>
 
     <script>
-        // --- SCRIPT HUJAN HATI (BARU) ---
+        // --- SCRIPT HUJAN HATI (TETAP ADA) ---
         function createHeart() {
             const heart = document.createElement('div');
             heart.classList.add('falling-heart');
-            heart.innerHTML = '❤️'; // Bisa ganti emoji lain kalau mau
-            
-            // Random posisi horizontal (kiri-kanan)
+            heart.innerHTML = '❤️'; 
             heart.style.left = Math.random() * 100 + 'vw';
-            
-            // Random ukuran hati (antara 10px sampai 25px)
             const size = Math.random() * 15 + 10;
             heart.style.fontSize = size + 'px';
-            
-            // Random kecepatan jatuh (antara 3s sampai 6s)
             const duration = Math.random() * 3 + 3;
             heart.style.animationDuration = duration + 's';
-            
-            // Masukkan ke dalam wadah
             document.getElementById('heart-rain-container').appendChild(heart);
-            
-            // Hapus hati setelah selesai animasi biar HP gak lemot
-            setTimeout(() => {
-                heart.remove();
-            }, duration * 1000);
+            setTimeout(() => { heart.remove(); }, duration * 1000);
         }
-
-        // Jalankan fungsi createHeart setiap 300ms (0.3 detik)
         setInterval(createHeart, 300);
 
-
-        // --- KONFIGURASI LAMA ---
+        // --- KONFIGURASI ---
         const TOPIC_BUAT_COWOK = "inbox-aeron-123"; 
         const TOPIC_BUAT_CEWEK = "inbox-wasda-123"; 
+        
+        // LIMIT WAKTU (Dalam Detik)
+        // Tombol akan mati selama 60 detik setelah dipencet
+        const COOLDOWN_TIME = 60; 
 
         // --- 1. SETUP AWAL ---
         const urlParams = new URLSearchParams(window.location.search);
@@ -179,33 +168,71 @@
 
         const welcomeMsg = document.getElementById('welcome-msg');
         
-        // Setup Role
         if (userRole === 'boy') {
             localStorage.setItem('role', 'boy'); 
             welcomeMsg.innerText = "Kirim rindu ke HP-nya Wasda?";
         } else if (userRole === 'girl') {
             localStorage.setItem('role', 'girl');
-            welcomeMsg.innerText = "Kirim rindu ke HP-nya Mine?";
+            welcomeMsg.innerText = "Kirim rindu ke HP-nya Aeron?";
         }
+
+        // --- VARIABLE STATUS ---
+        let isCoolingDown = false; // Penanda sedang jeda atau tidak
 
         // --- 2. FUNGSI KIRIM ---
         function kirimKangen() {
-            // Efek getar 200ms (Khusus Android)
-            if (navigator.vibrate) navigator.vibrate(200);
             const status = document.getElementById('status');
+            const btn = document.querySelector('.btn-kangen'); // Ambil elemen tombol
 
             if (!userRole) {
                 alert("Buka link pakai ?user=boy atau ?user=girl dulu!"); return;
             }
 
-            // A. Update Skor Lokal
+            // --- CEK APAKAH SEDANG COOLDOWN? ---
+            if (isCoolingDown) {
+                // Kalau lagi jeda, kasih peringatan lucu & batalkan kirim
+                status.innerText = `Sabar sayang, tunggu ${COOLDOWN_TIME} detik lagi ya! ⏳`;
+                status.classList.add('show');
+                status.style.color = "#orange";
+                setTimeout(() => status.classList.remove('show'), 2000);
+                
+                // Efek getar pendek 2x tanda dilarang
+                if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
+                return; // STOP DI SINI
+            }
+
+            // --- MULAI PROSES KIRIM ---
+            
+            // 1. Aktifkan Mode Cooldown
+            isCoolingDown = true;
+            
+            // Ubah tampilan tombol biar kelihatan lagi loading/disable
+            btn.style.opacity = "0.6";
+            btn.style.cursor = "not-allowed";
+            btn.style.transform = "scale(0.9)"; // Tombol mengecil sedikit
+
+            // 2. Set Timer untuk mengaktifkan tombol lagi nanti
+            setTimeout(() => {
+                isCoolingDown = false;
+                status.innerText = "Tombol siap dipencet lagi! ❤️";
+                status.style.color = "#d63384";
+                
+                // Balikin tampilan tombol
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+                btn.style.transform = "scale(1)";
+                
+                setTimeout(() => status.classList.remove('show'), 2000);
+            }, COOLDOWN_TIME * 1000); // Konversi detik ke milidetik
+
+
+            // 3. Update Skor Lokal
             currentScore += 1;
             scoreDisplay.innerText = currentScore;
             localStorage.setItem('kangenScore', currentScore);
 
-            // B. LOGIKA SILANG
+            // 4. Logika Kirim Notif
             const targetTopic = (userRole === 'boy') ? TOPIC_BUAT_CEWEK : TOPIC_BUAT_COWOK;
-            
             const notifMsg = (userRole === 'boy') 
                 ? "Sayang, aku kangen banget sama Kamu 🥺❤️" 
                 : "Mine, aku kangen banget sama Kamu 🥺❤️";
@@ -214,29 +241,30 @@
             status.innerText = "Mengirim ke HP dia...";
             status.style.color = "#d63384";
 
+            // Efek getar sukses
+            if (navigator.vibrate) navigator.vibrate(200); 
+
             const params = new URLSearchParams({
                 title: 'Sinyal Kangen Masuk! 🚨',
                 priority: '5', tags: 'heart,warning'
             });
 
-            // Kirim ke TARGET TOPIC
             fetch(`https://ntfy.sh/${targetTopic}?${params.toString()}`, {
                 method: 'POST', body: notifMsg
             })
             .then(res => {
                 if(res.ok) {
-                    status.innerText = "Terkirim! ✅";
+                    status.innerText = "Terkirim! Tunggu cooldown ya ⏳";
                 } else {
-                    status.innerText = "Gagal kirim notif.";
+                    status.innerText = "Gagal notif, tapi skor masuk.";
                 }
-                setTimeout(() => { status.classList.remove('show'); }, 2000);
             })
             .catch(err => {
                 status.innerText = "Offline (Skor tersimpan).";
             });
         }
 
-        // --- 3. FUNGSI RESET COUNTER ---
+        // --- 3. FUNGSI RESET ---
         function resetCounter() {
             if (confirm("Yakin mau reset skor kangen jadi 0?")) {
                 currentScore = 0;
@@ -248,5 +276,6 @@
     </script>
 </body>
 </html>
+
 
 
