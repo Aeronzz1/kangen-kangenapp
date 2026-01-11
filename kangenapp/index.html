@@ -225,7 +225,7 @@
             
             // Tampilkan status sesuai sisa kuota spam
             if (spamCount < SPAM_LIMIT) {
-                status.innerText = `Terkirim! ❤️ (Combo: ${spamCount}/${SPAM_LIMIT})`;
+                status.innerText = `Terkirim! ❤️ (${spamCount}/${SPAM_LIMIT})`;
             } else {
                 status.innerText = `Terkirim! Sekarang cooldown 3 menit ya ⏳`;
             }
@@ -298,3 +298,4 @@
     </script>
 </body>
 </html>
+
