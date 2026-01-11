@@ -22,44 +22,35 @@
             background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; margin: 0; font-family: 'Poppins', sans-serif; padding: 20px; color: #4a4a4a;
-            overflow: hidden; /* Mencegah scrollbar */
+            overflow: hidden; 
             position: relative; 
         }
 
-        /* --- CSS KHUSUS HUJAN FOTO (BARU) --- */
+        /* --- CSS KHUSUS HUJAN FOTO --- */
         #photo-rain-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden;
         }
         
         .falling-photo {
             position: absolute;
-            top: -20%; /* Mulai dari atas layar */
+            top: -20%; 
             opacity: 0;
-            border-radius: 10px; /* Sudut foto agak melengkung */
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* Bayangan halus */
+            border-radius: 10px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
             object-fit: cover;
             animation: fall-rotate-animation linear forwards;
         }
 
         @keyframes fall-rotate-animation {
-            0% {
-                opacity: 0;
-                transform: translateY(0) rotate(0deg) scale(0.8);
-            }
-            10% {
-                opacity: 0.8; /* Muncul pelan */
-            }
-            100% {
-                opacity: 0;
-                /* Jatuh ke bawah sambil muter dan kembali ke ukuran normal */
-                transform: translateY(110vh) rotate(360deg) scale(1); 
-            }
+            0% { opacity: 0; transform: translateY(0) rotate(0deg) scale(0.8); }
+            10% { opacity: 0.8; }
+            100% { opacity: 0; transform: translateY(110vh) rotate(360deg) scale(1); }
         }
 
-        /* --- CONTAINER (Glassmorphism) --- */
+        /* --- CONTAINER --- */
         .container {
             position: relative;
-            z-index: 10; /* Pastikan konten di atas foto background */
+            z-index: 10; 
             background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.3);
             padding: 40px 20px; text-align: center; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
@@ -127,43 +118,34 @@
 
     <script>
         // --- KONFIGURASI HUJAN FOTO ---
-        // Masukkan nama file foto yang sudah kamu upload di sini
         const photoList = [
             'foto1.jpg', 
             'foto2.jpg', 
             'foto3.jpg',
             'foto4.jpg'
-            // Tambahkan koma kalau mau nambah foto lagi
+            // Pastikan nama file sesuai dengan yg diupload di Vercel
         ];
 
-        // --- SCRIPT LOGIKA HUJAN FOTO ---
+        // --- SCRIPT HUJAN FOTO ---
         function createPhoto() {
-            if (photoList.length === 0) return; // Kalau gak ada foto, skip
+            if (photoList.length === 0) return; 
 
             const photo = document.createElement('img');
             photo.classList.add('falling-photo');
-            
-            // Pilih foto acak
             const randomImg = photoList[Math.floor(Math.random() * photoList.length)];
             photo.src = randomImg;
 
-            // Posisi acak (kiri/kanan)
             photo.style.left = Math.random() * 90 + 'vw';
-            
-            // Ukuran acak (antara 40px - 70px)
             const width = Math.random() * 80 + 100;
             photo.style.width = width + 'px';
             photo.style.height = 'auto';
 
-            // Kecepatan jatuh (4s - 8s) - Foto lebih bagus kalau pelan
             const duration = Math.random() * 4 + 4;
             photo.style.animationDuration = duration + 's';
             
             document.getElementById('photo-rain-container').appendChild(photo);
             setTimeout(() => { photo.remove(); }, duration * 1000);
         }
-        
-        // Jalankan setiap 600ms (0.6 detik)
         setInterval(createPhoto, 1000);
 
 
@@ -171,8 +153,9 @@
         const TOPIC_BUAT_COWOK = "inbox-aeron-123"; 
         const TOPIC_BUAT_CEWEK = "inbox-wasda-123"; 
         
-        // LIMIT WAKTU (Dalam Detik)
-        const COOLDOWN_TIME = 60; 
+        // --- SETTING COOLDOWN BARU ---
+        const SPAM_LIMIT = 5;       // Boleh spam sampai 5 kali
+        const COOLDOWN_TIME = 180;  // Istirahat 3 menit (180 detik)
 
         // --- 1. SETUP AWAL ---
         const urlParams = new URLSearchParams(window.location.search);
@@ -194,7 +177,9 @@
         }
 
         // --- VARIABLE STATUS ---
-        let isCoolingDown = false; 
+        let isCoolingDown = false; // Status apakah sedang dihukum cooldown
+        let spamCount = 0;         // Hitungan spam saat ini
+        let isSending = false;     // Kunci biar gak double click cepat (debounce)
 
         // --- 2. FUNGSI KIRIM ---
         function kirimKangen() {
@@ -205,9 +190,9 @@
                 alert("Buka link pakai ?user=boy atau ?user=girl dulu!"); return;
             }
 
-            // --- CEK COOLDOWN ---
+            // A. CEK APAKAH SEDANG MASA HUKUMAN COOLDOWN?
             if (isCoolingDown) {
-                status.innerText = `Sabar sayang, tunggu ${COOLDOWN_TIME} detik lagi ya! ⏳`;
+                status.innerText = `Eits! Istirahat dulu 3 menit ya sayang... ⏳`;
                 status.classList.add('show');
                 status.style.color = "#orange";
                 setTimeout(() => status.classList.remove('show'), 2000);
@@ -215,32 +200,35 @@
                 return;
             }
 
-            // --- MULAI PROSES ---
-            isCoolingDown = true;
-            btn.style.opacity = "0.6"; btn.style.cursor = "not-allowed"; btn.style.transform = "scale(0.9)";
+            // B. CEK APAKAH SEDANG PROSES KIRIM (Biar gak double tap)
+            if (isSending) return;
+            isSending = true;
 
-            setTimeout(() => {
-                isCoolingDown = false;
-                status.innerText = "Tombol siap dipencet lagi! ❤️";
-                status.style.color = "#d63384";
-                btn.style.opacity = "1"; btn.style.cursor = "pointer"; btn.style.transform = "scale(1)";
-                setTimeout(() => status.classList.remove('show'), 2000);
-            }, COOLDOWN_TIME * 1000);
+            // --- MULAI PROSES KIRIM ---
+            
+            // Tambah hitungan spam
+            spamCount++;
 
-            // Update Skor Lokal
+            // Update Skor Lokal & Storage
             currentScore += 1;
             scoreDisplay.innerText = currentScore;
             localStorage.setItem('kangenScore', currentScore);
 
-            // Logika Kirim
+            // Logika Kirim Notif
             const targetTopic = (userRole === 'boy') ? TOPIC_BUAT_CEWEK : TOPIC_BUAT_COWOK;
             const notifMsg = (userRole === 'boy') 
                 ? "Sayang, aku kangen banget sama Kamu 🥺❤️" 
                 : "Mine, aku kangen banget sama Kamu 🥺❤️";
 
             status.classList.add('show');
-            status.innerText = "Mengirim ke HP dia...";
             status.style.color = "#d63384";
+            
+            // Tampilkan status sesuai sisa kuota spam
+            if (spamCount < SPAM_LIMIT) {
+                status.innerText = `Terkirim! ❤️ (Combo: ${spamCount}/${SPAM_LIMIT})`;
+            } else {
+                status.innerText = `Terkirim! Sekarang cooldown 3 menit ya ⏳`;
+            }
 
             if (navigator.vibrate) navigator.vibrate(200); 
 
@@ -253,15 +241,49 @@
                 method: 'POST', body: notifMsg
             })
             .then(res => {
-                if(res.ok) {
-                    status.innerText = "Terkirim! Tunggu cooldown ya ⏳";
-                } else {
-                    status.innerText = "Gagal notif, tapi skor masuk.";
-                }
+                 // Selesai kirim, buka kunci debounce
+                 setTimeout(() => { isSending = false; }, 1000); 
+
+                 // C. CEK APAKAH SUDAH MENCAPAI LIMIT SPAM?
+                 if (spamCount >= SPAM_LIMIT) {
+                    aktifkanCooldown(btn, status);
+                 } else {
+                    // Kalau belum limit, hilangkan teks status setelah 2 detik
+                    setTimeout(() => status.classList.remove('show'), 2000);
+                 }
             })
             .catch(err => {
                 status.innerText = "Offline (Skor tersimpan).";
+                setTimeout(() => { isSending = false; }, 1000); 
             });
+        }
+
+        // --- FUNGSI MENGAKTIFKAN COOLDOWN 3 MENIT ---
+        function aktifkanCooldown(btn, status) {
+            isCoolingDown = true;
+            
+            // Ubah tampilan tombol jadi non-aktif
+            btn.style.opacity = "0.5";
+            btn.style.cursor = "not-allowed";
+            btn.style.transform = "scale(0.9)";
+            
+            // Mulai Timer 3 Menit (180 detik)
+            setTimeout(() => {
+                // Setelah waktu habis:
+                isCoolingDown = false;
+                spamCount = 0; // Reset hitungan spam jadi 0
+                
+                status.innerText = "Energi kangen sudah penuh lagi! ❤️";
+                status.classList.add('show');
+                status.style.color = "#d63384";
+                
+                // Balikin tombol
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+                btn.style.transform = "scale(1)";
+                
+                setTimeout(() => status.classList.remove('show'), 3000);
+            }, COOLDOWN_TIME * 1000);
         }
 
         // --- 3. FUNGSI RESET ---
@@ -276,9 +298,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
